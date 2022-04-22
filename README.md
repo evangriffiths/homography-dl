@@ -33,7 +33,8 @@ Note: this can be run on a GPU by using colab.research.google.com as follows:
 %%writefile run.py
 <run.py copied here>
 ```
-3. Log into Google drive, and locate the above data directory in your 'Shared with me' folder. Add a shortcut to your 'My Drive' folder.
+3. Log into Google drive, and locate the above data directory in your 'Shared
+with me' folder. Add a shortcut to your 'My Drive' folder.
 4. Add a code cell to mount this folder, and copy it locally:
 ```
 from google.colab import drive
@@ -46,14 +47,16 @@ drive.mount('/content/drive')
 5. Now you can execute `python3 run.py` to train on a GPU via the
 `--device=cuda` option. Test to see this is working:
 ```
-python3 run.py --test-data=/content/data/test.h5 --train-data=/content/data/train.h5 --device=cuda --mini=True
+python3 run.py --test-data=/content/data/test.h5
+--train-data=/content/data/train.h5 --device=cuda --mini=True
 ```
 
 ## Results
 The following command was can be used to train and test the network on a
 machine with a GPU.
 ```
-$ python3 run.py --test-data=<path_to/test.h5> --train-data=<path_to/train.h5> --device=cuda --batch-size=64 --epochs=9
+$ python3 run.py --test-data=<path_to/test.h5> --train-data=<path_to/train.h5>
+--device=cuda --batch-size=64 --epochs=9
 ```
 Training with a batch size of 64 is the largest power-of-2 batch size that can
 fit on the single GPU used (spec unknown). This gave a throughput of slightly
