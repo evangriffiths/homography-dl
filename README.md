@@ -46,16 +46,16 @@ drive.mount('/content/drive')
 ```
 5. Now you can execute `python3 run.py` to train on a GPU via the
 `--device=cuda` option. Test to see this is working:
-```
-python3 run.py --test-data=/content/data/test.h5
+```bash
+python3 run.py --test-data=/content/data/test.h5 \
 --train-data=/content/data/train.h5 --device=cuda --mini=True
 ```
 
 ## Results
 The following command was can be used to train and test the network on a
 machine with a GPU.
-```
-$ python3 run.py --test-data=<path_to/test.h5> --train-data=<path_to/train.h5>
+```bash
+python3 run.py --test-data=<path_to/test.h5> --train-data=<path_to/train.h5> \
 --device=cuda --batch-size=64 --epochs=9
 ```
 Training with a batch size of 64 is the largest power-of-2 batch size that can
