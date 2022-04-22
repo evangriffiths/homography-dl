@@ -43,7 +43,8 @@ drive.mount('/content/drive')
 !cp /content/drive/MyDrive/homography/train.h5 /content/data/
 !ls /content/data/
 ```
-5. Now you can execute `python3 run.py` to train on a GPU via the `--device=cuda` option. Test to see this is working:
+5. Now you can execute `python3 run.py` to train on a GPU via the
+`--device=cuda` option. Test to see this is working:
 ```
 python3 run.py --test-data=/content/data/test.h5 --train-data=/content/data/train.h5 --device=cuda --mini=True
 ```
