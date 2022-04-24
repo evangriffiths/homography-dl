@@ -190,7 +190,7 @@ def train_val(train_loader, val_loader, model, criterion, optimizer, num_epochs,
                          device=device)
 
         print("\tMean train loss:", mean_train_loss.to('cpu').item())
-        print("\tMean validation loss: {}".format(val_loss))
+        print("\tMean validation loss:", val_loss)
 
         # Save model parameters correspodning to best validation result
         if best_loss == None or val_loss < best_loss:
@@ -256,8 +256,6 @@ if __name__ == "__main__":
 
 
 # design decisions: optimizer, lr schedule, train-test split, batch size
-# 166 images per second on google colab GPU, ~10 minutes per epoc
-# Essentially reproducing the HomographyNet results.
 
 # Choice of loss: MSE.
 # The MSE loss is very similar metric to MACE, but slightly less computationally expensive
@@ -270,7 +268,6 @@ if __name__ == "__main__":
 # I haven't followed this approach, as it would result in a different MACE
 
 # Follow-up work:
-# - implement PF model for better MACE
 # - understand (by means of visualization) how learned features of first layer differ for homography estimation networks vs image classifiers
 #   (as firs conv layer for imagenet ResNet, for example, learns filters for RGB layers, whereas homography estimators trained on COCO learn filters for 2 separate grayscale perspective projections)
 
