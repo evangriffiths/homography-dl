@@ -114,5 +114,5 @@ The HomographyNet paper (June, 2016) is now nearly 6 years old, which is a long 
     - Traditional CV homography estimation teqniques (e.g. SIFT + RANSAC) do not suffer from this problem, as they do not require large synthetic data sets to train.
 
 - An example taken from the test set is this crop of an image of a dog, beside the transformed image:
-![Dog ](dog-head.png)
+![Dog ](images/dog-head.png)
 
