@@ -2,21 +2,9 @@ import argparse
 import copy
 import h5py
 import numpy as np
-from PIL import Image
 import torch
 import torch.nn as nn
 from tqdm import tqdm
-
-def print_an_image():
-    """
-    Display concatonated before-after homography transformation images from
-    the test data set. For visualization purposes only.
-    """
-    h5_file = h5py.File('data/test.h5', 'r')
-    i = np.random.randint(len(h5_file['/']))
-    images = np.array(h5_file[str(i)]).astype(np.uint8)
-    Image.fromarray(np.reshape(images, [256, 128])).show()
-
 
 def get_data_loader(dataset, args):
     """
@@ -241,7 +229,8 @@ if __name__ == "__main__":
                             val_loader=val_loader,
                             model=model,
                             criterion=torch.nn.MSELoss(),
-                            optimizer=torch.optim.Adam(model.parameters()),
+                            optimizer=torch.optim.AdamW(
+                                model.parameters(), weight_decay=1e-3),
                             num_epochs=args.epochs,
                             device=device)
 

@@ -14,6 +14,7 @@ follows:
 cd homography-dl
 python3 -m venv venv
 source venv/bin/activate
+pip3 install --upgrade pip
 pip3 install -r requirements.txt
 ```
 
@@ -25,7 +26,7 @@ data:
 ```bash
 python3 run.py \
         --test-data=<path_to/test.h5> \
-        --test-data=<path_to/test.h5> \
+        --train-data=<path_to/train.h5> \
         --mini=True
 ```
 
@@ -78,12 +79,14 @@ images per second while training, resulting in around 10 minutes per epoch.
 
 This above comnand trains the network for 9 epochs, generating the validation
 MSE loss curve below TODO.
-As you can see, the model converges after 6 epochs. The model state after the
-6th epoch is loaded, and the MACE is calculated on the test set. A final MACE
-of 9.55 is achieved.
+As you can see, the model converges after 5 epochs. The model state after the
+5th epoch is loaded, and the MACE is calculated on the test set. A final MACE
+of 8.81 is achieved.
 
-This is similar, though slightly worse to that reported in the HomographyNet
-paper (9.20).
+This is similar to - in fact slightly better than - that reported in the
+HomographyNet paper (9.20).
+
+![Adam Loss Curve](images/default-adam-loss-curve.png)
 
 ## Limitations, improvements and further work
 The HomographyNet paper (June, 2016) is now nearly 6 years old, which is quite a long time in the CV/ML world. We can see here https://paperswithcode.com/sota/homography-estimation-on-pds-coco that HomographyNet was surpassed as the SOTA architechture for homography estimation in 2019 by PFNet (and again with a more recent iteration). I'd be interested to reimplement this model in PyTorch. `run.py` could be easily extended to support more models via a command-line argument. Note that paperswithcode.com reports HomographyNet as achieving a MACE of 2.5. Not sure why this is. PFNet is a much deeper network (more FLOPs per iteration) than HomographyNet, but has a similar number of parameters. >90% of HomographyNet's parameters are in its penultimate FC layer.
