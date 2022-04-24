@@ -33,10 +33,10 @@ python3 run.py \
 ## Running on a GPU remotely
 Note: this can be run on a GPU by using colab.research.google.com as follows:
 1. Select `Edit > Notebook settings > Hardware accelerator > GPU`.
-2. Copy and paste run.py into a code cell:
+2. In a code cell, clone this repo and `cd` into the directory:
 ```
-%%writefile run.py
-<run.py copied here>
+!git clone <repo url>
+!cd homography-dl
 ```
 3. Log into Google drive, and locate the above data directory in your 'Shared
 with me' folder. Add a shortcut to your 'My Drive' folder.
@@ -89,9 +89,26 @@ HomographyNet paper (9.20).
 ![Adam Loss Curve](images/default-adam-loss-curve.png)
 
 ## Limitations, improvements and further work
-The HomographyNet paper (June, 2016) is now nearly 6 years old, which is quite a long time in the CV/ML world. We can see here https://paperswithcode.com/sota/homography-estimation-on-pds-coco that HomographyNet was surpassed as the SOTA architechture for homography estimation in 2019 by PFNet (and again with a more recent iteration). I'd be interested to reimplement this model in PyTorch. `run.py` could be easily extended to support more models via a command-line argument. Note that paperswithcode.com reports HomographyNet as achieving a MACE of 2.5. Not sure why this is. PFNet is a much deeper network (more FLOPs per iteration) than HomographyNet, but has a similar number of parameters. >90% of HomographyNet's parameters are in its penultimate FC layer.
+The HomographyNet paper (June, 2016) is now nearly 6 years old, which is a long time in the CV/ML world. We can see here https://paperswithcode.com/sota/homography-estimation-on-pds-coco that HomographyNet was surpassed as the SOTA architechture for homography estimation in 2019 by PFNet (and again with a more recent iteration). I'd be interested to reimplement this model in PyTorch. `run.py` could be easily extended to support more models via a command-line argument. Note that paperswithcode.com reports HomographyNet as achieving a MACE of 2.5. Not sure why this is. PFNet is a much deeper network (more FLOPs per iteration) than HomographyNet, but has a similar number of parameters. >90% of HomographyNet's parameters are in its penultimate FC layer.
 
 
+### TODO
+- design decisions: optimizer, lr schedule, train-test split, batch size
+- Choice of loss: MSE.
+    - The MSE loss is very similar metric to MACE, but slightly less computationally expensive
+- Using MSE loss, and optimizer as specified in the paper (SGD, lr=0.005, momentum=0.9), I saw exploding gradients, which quickly led to a NaN loss.
+- Switching to default Adam optimizer (as is generally regarded as a safe first guess) solved this, producing the MSE loss curve below:
+- The loss values reported here https://github.com/mazenmel/Deep-homography-estimation-Pytorch/blob/master/DeepHomographyEstimation.ipynb do not match up with those seen in my implementation, as the input data is transformed in the paper:
+    - labels input images are scaled to be in the range [-1, 1]
+- I haven't followed this approach, as it would result in a different MACE
 
+- Follow-up work:
+    - understand (by means of visualization) how learned features of first layer differ for homography estimation networks vs image classifiers (as firs conv layer for imagenet ResNet, for example, learns filters for RGB layers, whereas homography estimators trained on COCO learn filters for 2 separate grayscale perspective projections)
 
-
+- Comment on the limitations of how well this would generalize to a real-world test set, vs 
+    - A homography only relates two projections in the scenarios:
+        - Rotation only movements
+        - Planar scenes
+        - Scenes in which objects are very far from the viewer
+    - In the generated dataset we are using, none of these assumptions are guaranteed to hold. So a model trained on this data may lead to bad generalization on real world test data.
+    - Traditional CV homography estimation teqniques (e.g. SIFT + RANSAC) do not suffer from this problem, as they do not require large synthetic data sets to train.
