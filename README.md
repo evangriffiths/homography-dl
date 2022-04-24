@@ -50,13 +50,13 @@ drive.mount('/content/drive')
 !ls /content/data/
 ```
 5. Now you can execute `python3 run.py` to train on a GPU via the
-`--device=cuda` option. Test to see this is working:
+`--device=cuda` option. Test to see this is working by adding a code cell with:
 ```bash
-python3 run.py \
-        --test-data=/content/data/test.h5 \
-        --train-data=/content/data/train.h5 \
-        --device=cuda \
-        --mini=True
+!python3 run.py \
+         --test-data=/content/data/test.h5 \
+         --train-data=/content/data/train.h5 \
+         --device=cuda \
+         --mini=True
 ```
 ## Model architechture and design decisions
 
@@ -112,3 +112,7 @@ The HomographyNet paper (June, 2016) is now nearly 6 years old, which is a long 
         - Scenes in which objects are very far from the viewer
     - In the generated dataset we are using, none of these assumptions are guaranteed to hold. So a model trained on this data may lead to bad generalization on real world test data.
     - Traditional CV homography estimation teqniques (e.g. SIFT + RANSAC) do not suffer from this problem, as they do not require large synthetic data sets to train.
+
+- An example taken from the test set is this crop of an image of a dog, beside the transformed image:
+![Dog ](images/default-adam-loss-curve.png)
+
