@@ -70,8 +70,9 @@ class Model(nn.Module):
     """
     Implementation of 'HomographyNet' (see https://arxiv.org/pdf/1606.03798.pdf
     Fig. 1.)
-    Code identical to implementation from
-    github.com/mazenmel/Deep-homography-estimation-Pytorch.
+    Code nearly identical to implementation from
+    github.com/mazenmel/Deep-homography-estimation-Pytorch, with dropout layers
+    added, as described in the paper.
     """
     def __init__(self):
         super(Model,self).__init__()

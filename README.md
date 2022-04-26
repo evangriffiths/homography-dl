@@ -1,10 +1,27 @@
 # Training a network for homography prediction
 
-Here we used a synthetically generated dataset of ... to train a homograpghy prediction network. We evaluate MACE results achieved HomographyNet (as seen in
-https://arxiv.org/pdf/1606.03798.pdf)
+A homography is a transformation relating two projections of a planar surface.
+It is a 3x3 matrix, H, that maps an image coordinates of a point on a plane to
+coordinates in another image. Since we are using homogeneous corrdinates, the
+scale of H doesn't matter, so a solutions requires finding (at least) four
+matching points. The homography can then be solved for using linear least
+squares.
 
-## Background
-TODO
+Traditional CV methods for doing this involve key point detection (e.g. SIFT)
+followed by correspondence matching (e.g. min distance + RANSAC).
+
+Here we try to replace these steps by training a DNN. We use the model
+HomographyNet (described in https://arxiv.org/pdf/1606.03798.pdf) as the
+starting point with which to experiment.
+
+To train our network we have a synthetic COCO-based dataset described as
+follows:
+- The two channels of the input represent two projections of the same planar
+  scene from different viewpoints, in grayscale.
+- The target is a vector containing offsets of four corners of a random crop of
+  the first channel, giving their positions in the second channel. The four
+  corner offsets can be used to generate the eight equations to solve the
+  homography, and can thus be said to encode the homography.
 
 ## Setup
 1. Create a virtual environment and install the required dependencies as
@@ -60,7 +77,13 @@ drive.mount('/content/drive')
 ```
 
 ## Model architechture and design decisions
-
+- A VGG-like Network with eight convolutional layers and two fully connected layers
+- Batch normalization to improve stability for a given learning rate.
+- Mean squared error (MSE) loss - the same metric as MACE, but less computationall expensive.
+- An adaptive optimizer (AdamW), a common choice for a good 'first guess' for CV tasks. Tolerant to a range of learning rates relative to standard SGD with momentum.
+- First case of default pytorch AdamW saw divergence after 5 epochs, so regularization required.
+- AdamW with weight decay. Tried 0.001, didn't work very well. Could try tuning if were to spend more time on this (IWTSMTOT).
+- Added dropout layers after the FC layers (not the convolutional layers, as (1) they contain far fewer parameters, so require less regularization, and (2) have less of a regularizing effect anyway when applied to highly correlated signals like images/feature maps which are fed into subsequent convolutional layers.).
 
 ## Results
 The following command was can be used to train and test the network on a
@@ -71,27 +94,26 @@ python3 run.py \
         --train-data=<path_to/train.h5> \
         --device=cuda \
         --batch-size=64 \
-        --epochs=9
+        --epochs=12
 ```
 Training with a batch size of 64 is the largest power-of-2 batch size that can
 fit on the single GPU used (Tesla K80, 24GB, according to
 `torch.cuda.get_device_name(0)`). This gave a throughput of slightly over 160
 images per second while training, resulting in around 10 minutes per epoch.
 
-This above comnand trains the network for 9 epochs, generating the validation
-MSE loss curve below TODO.
+This above comnand trains the network for 12 epochs, generating the validation
+MSE loss curve below.
+
+![Loss Curves](images/loss-curves.png)
 As you can see, the model converges after 5 epochs. The model state after the
-5th epoch is loaded, and the MACE is calculated on the test set. A final MACE
-of 8.81 is achieved.
+5th epoch is loaded, and the MACE is calculated on the test set. **A final MACE
+of 8.14 is achieved**.
 
 This is similar to - in fact slightly better than - that reported in the
 HomographyNet paper (9.20).
 
-![Loss Curves](images/loss-curves.png)
-
 ## Limitations, improvements and further work
 The HomographyNet paper (June, 2016) is now nearly 6 years old, which is a long time in the CV/ML world. We can see here https://paperswithcode.com/sota/homography-estimation-on-pds-coco that HomographyNet was surpassed as the SOTA architechture for homography estimation in 2019 by PFNet (and again with a more recent iteration). I'd be interested to reimplement this model in PyTorch. `run.py` could be easily extended to support more models via a command-line argument. Note that paperswithcode.com reports HomographyNet as achieving a MACE of 2.5. Not sure why this is. PFNet is a much deeper network (more FLOPs per iteration) than HomographyNet, but has a similar number of parameters. >90% of HomographyNet's parameters are in its penultimate FC layer.
-
 
 ### TODO
 - design decisions: optimizer, lr schedule, train-test split, batch size
