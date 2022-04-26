@@ -74,8 +74,9 @@ class Model(nn.Module):
     github.com/mazenmel/Deep-homography-estimation-Pytorch, with dropout layers
     added, as described in the paper.
     """
-    def __init__(self):
+    def __init__(self, dropout):
         super(Model,self).__init__()
+        self.dropout = dropout
         self.layer1 = nn.Sequential(nn.Conv2d(2, 64, 3, padding=1),
                                     nn.BatchNorm2d(64),
                                     nn.ReLU())
@@ -125,10 +126,12 @@ class Model(nn.Module):
         x = self.layer6(x)
         x = self.layer7(x)
         x = self.layer8(x)
-        x = self.dropout(x)
+        if self.dropout is True:
+            x = self.dropout(x)
         x = x.view(-1, 128 * 16 * 16)
         x = self.fc1(x)
-        x = self.dropout(x)
+        if self.dropout is True:
+            x = self.dropout(x)
         x = self.fc2(x)
         return x
 
@@ -238,6 +241,9 @@ if __name__ == "__main__":
     parser.add_argument('--normalize', type=bool, default=True, required=False,
                         help='If true, normalize the image data that is the '
                              'input to the model')
+    parser.add_argument('--dropout', type=bool, default=True, required=False,
+                        help='If true, include dropout layers after the fully '
+                             'connected layers')
     parser.add_argument('--mini', type=bool, default=False, required=False,
                         help='If true, use a toy subsample of the dataset')
     args = parser.parse_args()
@@ -245,11 +251,12 @@ if __name__ == "__main__":
     torch.manual_seed(0)
 
     device = torch.device(args.device)
-    model = Model().to(device)
+    model = Model(args.dropout).to(device)
 
     # Training and validation
     print("Training and validation phase:")
-    train_val_mean, train_val_var = get_mean_and_var(args.train_data)
+    if args.normalize is True:
+        train_val_mean, train_val_var = get_mean_and_var(args.train_data)
     transform = tt.Normalize(train_val_mean,
                              train_val_var**0.5) if args.normalize else None
     train_val_data_set = HDF5Dataset(args.train_data, transform=transform)
@@ -270,7 +277,8 @@ if __name__ == "__main__":
 
     # Testing
     print("Final evalutaion on test data:")
-    test_mean, test_var = get_mean_and_var(args.test_data)
+    if args.normalize is True:
+        test_mean, test_var = get_mean_and_var(args.test_data)
     test_transform = tt.Normalize(test_mean,
                                   test_var**0.5) if args.normalize else None
     test_data_set = HDF5Dataset(args.test_data, transform=test_transform)

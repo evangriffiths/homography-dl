@@ -48,7 +48,8 @@ python3 run.py \
 ```
 
 ## Running on a GPU remotely
-Note: this can be run on a GPU by using colab.research.google.com as follows:
+Note: this can be run on a GPU by using
+[colab.research.google.com]colab.research.google.com as follows:
 1. Select `Edit > Notebook settings > Hardware accelerator > GPU`.
 2. In a code cell, clone this repo and `cd` into the directory:
 ```
@@ -77,17 +78,38 @@ drive.mount('/content/drive')
 ```
 
 ## Model architechture and design decisions
-- A VGG-like Network with eight convolutional layers and two fully connected layers
+HomographyNet uses a VGG-like Network with eight convolutional layers (the CNN
+backbone that does the key point detection work of SIFT) and two fully connected
+layers (which predict the corner offsets). The key points of this archtecture
+are:
+- Conv layers and Relu non-linearity as the basic feature detection block.
+- Pooling layers, so convolutions layers detect features over a range of scales
+  (with more complex features further down the network, so more channels per
+  layer).
 - Batch normalization to improve stability for a given learning rate.
-- Mean squared error (MSE) loss - the same metric as MACE, but less computationall expensive.
-- An adaptive optimizer (AdamW), a common choice for a good 'first guess' for CV tasks. Tolerant to a range of learning rates relative to standard SGD with momentum.
-- First case of default pytorch AdamW saw divergence after 5 epochs, so regularization required.
-- AdamW with weight decay. Tried 0.001, didn't work very well. Could try tuning if were to spend more time on this (IWTSMTOT).
-- Added dropout layers after the FC layers (not the convolutional layers, as (1) they contain far fewer parameters, so require less regularization, and (2) have less of a regularizing effect anyway when applied to highly correlated signals like images/feature maps which are fed into subsequent convolutional layers.).
+- Dropout after the fully connected layers for regularization (not the
+  convolutional layers, as (1) they contain far fewer parameters, so require
+  less regularization, and (2) have less of a regularizing effect anyway when
+  applied to highly correlated signals like images/feature maps which are fed
+  into subsequent convolutional layers).
+See `class Model` in `run.py` for the Pytorch implementation.
+
+For the training (and interleaved validation) phase, we use mean squared error
+(MSE) loss. This is essentially the same metric as mean average corner error
+(MACE), which we use for evaluating the trained model, but less computationally
+expensive.
+
+For the optimizer, I achieved the best result using AdamW with default Pytorch
+hyperparameters. In the results section I describe the how this performs in
+terms of overfitting. Note that using the optimizer described in the
+HomographyNet paper (SGD with lr=0.005, momentum=0.9) I saw exploding gradients.
+Adaptive optimizers (like AdamW) are tolerant to a range of learning rates
+relative to standard SGD with momentum, so are a good 'first try' given the
+limited time I was willing to spend tuning hyperparameters.
 
 ## Results
-The following command was can be used to train and test the network on a
-machine with a GPU.
+The following command was used to train and test the network on a machine with
+a GPU.
 ```bash
 python3 run.py \
         --test-data=<path_to/test.h5> \
@@ -101,33 +123,50 @@ fit on the single GPU used (Tesla K80, 24GB, according to
 `torch.cuda.get_device_name(0)`). This gave a throughput of slightly over 160
 images per second while training, resulting in around 10 minutes per epoch.
 
-This above comnand trains the network for 12 epochs, generating the validation
-MSE loss curve below.
+This above comnand trains the network for 12 epochs, generating the right of the
+three loss curves below.
 
 ![Loss Curves](images/loss-curves.png)
-As you can see, the model converges after 5 epochs. The model state after the
-5th epoch is loaded, and the MACE is calculated on the test set. **A final MACE
-of 8.14 is achieved**.
+
+The model state that gave the best validation loss (in this case the final
+state) is loaded, and the MACE is calculated on the test set. **A final MACE
+of 8.14 is achieved** with the above command.
 
 This is similar to - in fact slightly better than - that reported in the
 HomographyNet paper (9.20).
 
+If I had more time I would have trained for many more epochs in this
+configuration.
+
+The other two graphs show training performance for two configurations when
+running with `--dropout=False`. The first demonstrates the overfitting you
+get without the regularization that you get from dropout. In theory, L2
+regularization via weight decay should also prevent the fitting. However, the
+middle figure shows how a weight decay of 0.001 with AdamW performs poorly in
+comparison to dropout.
+
 ## Limitations, improvements and further work
-The HomographyNet paper (June, 2016) is now nearly 6 years old, which is a long time in the CV/ML world. We can see here https://paperswithcode.com/sota/homography-estimation-on-pds-coco that HomographyNet was surpassed as the SOTA architechture for homography estimation in 2019 by PFNet (and again with a more recent iteration). I'd be interested to reimplement this model in PyTorch. `run.py` could be easily extended to support more models via a command-line argument. Note that paperswithcode.com reports HomographyNet as achieving a MACE of 2.5. Not sure why this is. PFNet is a much deeper network (more FLOPs per iteration) than HomographyNet, but has a similar number of parameters. >90% of HomographyNet's parameters are in its penultimate FC layer.
+
+The HomographyNet paper (June, 2016) is now nearly 6 years old, which is a long
+time in the CV/ML world. We can see
+[here]https://paperswithcode.com/sota/homography-estimation-on-pds-coco that
+HomographyNet was surpassed as the SOTA architechture for homography estimation
+in 2019 by PFNet (and again with a more recent iteration). With more time, I'd
+like to reimplement this model in Pytorch. `run.py` could be easily extended to
+support more models via a command-line argument.
+(Note that paperswithcode.com reports HomographyNet as achieving a MACE of 2.5.
+I'm not sure why this is, as it doesn't agree with what is reported in the
+paper).
+
+PFNet is a much deeper network more FLOPs per iteration) than HomographyNet,
+but has a similar number of parameters (as >90% of HomographyNet's parameters
+are in its penultimate FC layer) so we can expect a similar number of epochs,
+but greater time to train the network.
 
 ### TODO
-- design decisions: optimizer, lr schedule, train-test split, batch size
-- Choice of loss: MSE.
-    - The MSE loss is very similar metric to MACE, but slightly less computationally expensive
-- Using MSE loss, and optimizer as specified in the paper (SGD, lr=0.005, momentum=0.9), I saw exploding gradients, (loss going to NaN after less than one epoch).
-- Switching to default Adam optimizer (as is generally regarded as a safe first guess) solved this, producing the MSE loss curve below:
-- The loss values reported here https://github.com/mazenmel/Deep-homography-estimation-Pytorch/blob/master/DeepHomographyEstimation.ipynb do not match up with those seen in my implementation, as the input data is transformed in the paper:
-    - labels input images are scaled to be in the range [-1, 1]
-- I haven't followed this approach, as it would result in a different MACE
-- Much faster convergence than observed with SGD + momentum, but also overfitting. Try adding weight_decay 
 
 - Follow-up work:
-    - understand (by means of visualization) how learned features of first layer differ for homography estimation networks vs image classifiers (as firs conv layer for imagenet ResNet, for example, learns filters for RGB layers, whereas homography estimators trained on COCO learn filters for 2 separate grayscale perspective projections)
+    - understand (by means of visualization) how learned features of first layer differ for homography estimation networks vs image classifiers (as first conv layer for imagenet ResNet, for example, learns filters for RGB layers, whereas homography estimators trained on COCO learn filters for 2 separate grayscale perspective projections)
 
 - Comment on the limitations of how well this would generalize to a real-world test set, vs 
     - A homography only relates two projections in the scenarios:
