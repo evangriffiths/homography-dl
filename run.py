@@ -4,7 +4,27 @@ import h5py
 import numpy as np
 import torch
 import torch.nn as nn
+import torchvision.transforms as tt
 from tqdm import tqdm
+
+def get_mean_and_var(file_path):
+    """
+    Get mean and variance of a HDF5 dataset
+    """
+    data_info = h5py.File(file_path, 'r')
+    summed, summed_squared = 0, 0
+    for idx in range(len(data_info)):
+        data = data_info[str(idx)]
+        image = torch.tensor(np.array(data), dtype=torch.float32)
+        # Mean over all dims, so assuming the two input channels of the input
+        # image have same mean and variance.
+        summed += torch.mean(image)
+        summed_squared += torch.mean(image**2)
+
+    mean = summed / len(data_info)
+    var = (summed_squared / len(data_info)) - mean**2
+    return mean, var
+
 
 def get_data_loader(dataset, args):
     """
@@ -27,9 +47,10 @@ class HDF5Dataset(torch.utils.data.Dataset):
     for easy batching, etc. of the dataset.
     Inspired by towardsdatascience.com/hdf5-datasets-for-pytorch-631ff1d750f5.
     """
-    def __init__(self, file_path):
+    def __init__(self, file_path, transform=None):
         super().__init__()
         self.data_info = h5py.File(file_path, 'r')
+        self.transform = transform
 
     def __len__(self):
         return len(self.data_info['/'])
@@ -37,6 +58,9 @@ class HDF5Dataset(torch.utils.data.Dataset):
     def __getitem__(self, index):
         data = self.data_info[str(index)]
         image = torch.tensor(np.array(data), dtype=torch.float32)
+        if self.transform:
+            image = self.transform(image)
+
         label = torch.tensor(data.attrs.get('label').flatten(),
                              dtype=torch.float32)
         return (image, label)
@@ -78,6 +102,7 @@ class Model(nn.Module):
         self.layer8 = nn.Sequential(nn.Conv2d(128, 128, 3, padding=1),
                                     nn.BatchNorm2d(128),
                                     nn.ReLU())
+        self.dropout = nn.Dropout(p=0.5)
         # Output of final conv layer produces 128 16x16 feature maps
         self.fc1 = nn.Linear(128 * 16 * 16, 1024)
         # Final linear layer predicts the eight values defining the four
@@ -99,8 +124,10 @@ class Model(nn.Module):
         x = self.layer6(x)
         x = self.layer7(x)
         x = self.layer8(x)
+        x = self.dropout(x)
         x = x.view(-1, 128 * 16 * 16)
         x = self.fc1(x)
+        x = self.dropout(x)
         x = self.fc2(x)
         return x
 
@@ -207,6 +234,9 @@ if __name__ == "__main__":
     parser.add_argument('--device', type=str, default='cpu', required=False,
                         help='The device the model is executed on',
                         choices=['cpu', 'cuda'])
+    parser.add_argument('--normalize', type=bool, default=True, required=False,
+                        help='If true, normalize the image data that is the '
+                             'input to the model')
     parser.add_argument('--mini', type=bool, default=False, required=False,
                         help='If true, use a toy subsample of the dataset')
     args = parser.parse_args()
@@ -218,7 +248,10 @@ if __name__ == "__main__":
 
     # Training and validation
     print("Training and validation phase:")
-    train_val_data_set = HDF5Dataset(args.train_data)
+    train_val_mean, train_val_var = get_mean_and_var(args.train_data)
+    transform = tt.Normalize(train_val_mean,
+                             train_val_var**0.5) if args.normalize else None
+    train_val_data_set = HDF5Dataset(args.train_data, transform=transform)
     training_length = int(len(train_val_data_set) * 0.8)
     train_data_set, val_data_set = torch.utils.data.random_split(
         dataset=train_val_data_set,
@@ -230,13 +263,16 @@ if __name__ == "__main__":
                             model=model,
                             criterion=torch.nn.MSELoss(),
                             optimizer=torch.optim.AdamW(
-                                model.parameters(), weight_decay=1e-3),
+                                model.parameters()),
                             num_epochs=args.epochs,
                             device=device)
 
     # Testing
     print("Final evalutaion on test data:")
-    test_data_set = HDF5Dataset(args.test_data)
+    test_mean, test_var = get_mean_and_var(args.test_data)
+    test_transform = tt.Normalize(test_mean,
+                                  test_var**0.5) if args.normalize else None
+    test_data_set = HDF5Dataset(args.test_data, transform=test_transform)
     mean_mace = test(data_loader=get_data_loader(test_data_set, args),
                      model=final_model,
                      criterion=mean_average_corner_error,

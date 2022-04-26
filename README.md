@@ -58,6 +58,7 @@ drive.mount('/content/drive')
          --device=cuda \
          --mini=True
 ```
+
 ## Model architechture and design decisions
 
 
@@ -86,7 +87,7 @@ of 8.81 is achieved.
 This is similar to - in fact slightly better than - that reported in the
 HomographyNet paper (9.20).
 
-![Adam Loss Curve](images/default-adam-loss-curve.png)
+![Loss Curves](images/loss-curves.png)
 
 ## Limitations, improvements and further work
 The HomographyNet paper (June, 2016) is now nearly 6 years old, which is a long time in the CV/ML world. We can see here https://paperswithcode.com/sota/homography-estimation-on-pds-coco that HomographyNet was surpassed as the SOTA architechture for homography estimation in 2019 by PFNet (and again with a more recent iteration). I'd be interested to reimplement this model in PyTorch. `run.py` could be easily extended to support more models via a command-line argument. Note that paperswithcode.com reports HomographyNet as achieving a MACE of 2.5. Not sure why this is. PFNet is a much deeper network (more FLOPs per iteration) than HomographyNet, but has a similar number of parameters. >90% of HomographyNet's parameters are in its penultimate FC layer.
@@ -96,11 +97,12 @@ The HomographyNet paper (June, 2016) is now nearly 6 years old, which is a long 
 - design decisions: optimizer, lr schedule, train-test split, batch size
 - Choice of loss: MSE.
     - The MSE loss is very similar metric to MACE, but slightly less computationally expensive
-- Using MSE loss, and optimizer as specified in the paper (SGD, lr=0.005, momentum=0.9), I saw exploding gradients, which quickly led to a NaN loss.
+- Using MSE loss, and optimizer as specified in the paper (SGD, lr=0.005, momentum=0.9), I saw exploding gradients, (loss going to NaN after less than one epoch).
 - Switching to default Adam optimizer (as is generally regarded as a safe first guess) solved this, producing the MSE loss curve below:
 - The loss values reported here https://github.com/mazenmel/Deep-homography-estimation-Pytorch/blob/master/DeepHomographyEstimation.ipynb do not match up with those seen in my implementation, as the input data is transformed in the paper:
     - labels input images are scaled to be in the range [-1, 1]
 - I haven't followed this approach, as it would result in a different MACE
+- Much faster convergence than observed with SGD + momentum, but also overfitting. Try adding weight_decay 
 
 - Follow-up work:
     - understand (by means of visualization) how learned features of first layer differ for homography estimation networks vs image classifiers (as firs conv layer for imagenet ResNet, for example, learns filters for RGB layers, whereas homography estimators trained on COCO learn filters for 2 separate grayscale perspective projections)
@@ -114,5 +116,6 @@ The HomographyNet paper (June, 2016) is now nearly 6 years old, which is a long 
     - Traditional CV homography estimation teqniques (e.g. SIFT + RANSAC) do not suffer from this problem, as they do not require large synthetic data sets to train.
 
 - An example taken from the test set is this crop of an image of a dog, beside the transformed image:
-![Dog ](images/dog-head.png)
+![Dog Head](images/dog-head.png)
 
+- Use AdamW over Adam when ``weight_decay > 0` to have the correct L2 regularization implementation (i.e. adding the square of the weights to the loss, `Loss = MSE(output, label) + wd * sum(w^2)`).
