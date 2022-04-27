@@ -9,7 +9,9 @@ from tqdm import tqdm
 
 def get_mean_and_var(file_path):
     """
-    Get mean and variance of a HDF5 dataset
+    Get mean and variance of a HDF5 dataset. Assumes input shape of
+    [channels, width, height], and returns means and variances of shape
+    [channels].
     """
     data_info = h5py.File(file_path, 'r')
     summed, summed_squared = 0, 0
