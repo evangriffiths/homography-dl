@@ -236,13 +236,13 @@ relates two projections in the scenarios of:
  But in our synthetic dataset, none of these assumptions are guaranteed to
  hold. The below image pairs taken from the test set are an example when the
  assumptions are broken.
-
+ 
 ![Dog Head](images/dog-head.png)
-
+ 
  I think it would be worth investigating whether the relationships between the
  two input channel of the training data set would still apply when testing on
  real world image pairs.
-
+ 
  Note that Traditional CV homography estimation techniques (e.g. SIFT + RANSAC)
  do not suffer from this problem, as they do not require large synthetic data
  sets to train.
