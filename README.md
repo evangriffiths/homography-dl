@@ -1,11 +1,11 @@
 # Training a network for homography prediction
 
 A homography is a transformation relating two projections of a planar surface.
-It is a 3x3 matrix, H, that maps an image coordinates of a point on a plane to
-coordinates in another image. Since we are using homogeneous corrdinates, the
-scale of H doesn't matter, so a solutions requires finding (at least) four
-matching points. The homography can then be solved for using linear least
-squares.
+It is a 3x3 matrix, that maps an image coordinates of a point on a plane to
+coordinates in another image. Since we are using homogeneous corrdinates, its
+scale doesn't matter, so a solutions requires finding (at least) four matching
+points, to give eight equations for the eight unknowns. The homography can then
+be solved for using linear least squares.
 
 Traditional CV methods for doing this involve key point detection (e.g. SIFT)
 followed by correspondence matching (e.g. min distance + RANSAC).
@@ -248,17 +248,17 @@ relates two projections in the scenarios of:
  sets to train.
 
 2. The HomographyNet paper (June, 2016) is now nearly 6 years old, which is a
- long time in the CV/ML world. We can see
- [here](https://paperswithcode.com/sota/homography-estimation-on-pds-coco) that
- HomographyNet was surpassed as the SOTA architechture for homography estimation
- in 2019 by PFNet (and again with a more recent iteration). With more time, I'd
- like to reimplement this model in Pytorch. `run.py` could be easily extended to
- support more models via a command-line argument.
- (Note that paperswithcode.com reports HomographyNet as achieving a MACE of 2.5.
- I'm not sure why this is, as it doesn't agree with what is reported in the
- paper).
+  long time in the CV/ML world. We can see
+  [here](https://paperswithcode.com/sota/homography-estimation-on-pds-coco) that
+  HomographyNet was surpassed as the SOTA architechture for homography
+  estimation in 2019 by PFNet (and again with a more recent iteration). With
+  more time, I'd like to reimplement this model in Pytorch. `run.py` could be
+  easily extended to support more models via a command-line argument.
+  (Note that paperswithcode.com reports HomographyNet as achieving a MACE of
+  2.50. I'm not sure why this is, as it doesn't agree with what is reported in
+  the paper).
 
- PFNet is a much deeper network more FLOPs per iteration) than HomographyNet,
- but has a similar number of parameters (as >90% of HomographyNet's parameters
- are in its penultimate FC layer) so we can expect a similar number of epochs,
- but greater time to train the network.
+  PFNet is a much deeper network more FLOPs per iteration) than HomographyNet,
+  but has a similar number of parameters (as >90% of HomographyNet's parameters
+  are in its penultimate FC layer) so we can expect a similar number of epochs,
+  but greater time to train the network.
