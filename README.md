@@ -1,27 +1,27 @@
 # Training a network for homography prediction
 
 A homography is a transformation relating two projections of a planar surface.
-It is a 3x3 matrix, that maps an image coordinates of a point on a plane to
-coordinates in another image. Since we are using homogeneous corrdinates, its
-scale doesn't matter, so a solutions requires finding (at least) four matching
-points, to give eight equations for the eight unknowns. The homography can then
-be solved for using linear least squares.
+It is a 3x3 matrix, that maps pixel coordinates of a point on a plane to pixel
+coordinates in another image of the same plane. Since we are using homogeneous
+coordinates, its scale doesn't matter, so a solution requires finding (at least)
+four matching points, to give eight equations for the eight unknowns. The
+homography can then be solved for using linear least squares.
 
 Traditional CV methods for doing this involve key point detection (e.g. SIFT)
 followed by correspondence matching (e.g. min distance + RANSAC).
 
 Here we try to replace these steps by training a DNN. We use the model
 HomographyNet (described in https://arxiv.org/pdf/1606.03798.pdf) as the
-starting point with which to experiment.
+starting point from which to experiment.
 
 To train our network we have a synthetic COCO-based dataset described as
 follows:
 - The two channels of the input represent two projections of the same planar
   scene from different viewpoints, in grayscale.
-- The target is a vector containing offsets of four corners of a random crop of
-  the first channel, giving their positions in the second channel. The four
-  corner offsets can be used to generate the eight equations to solve the
-  homography, and can thus be said to encode the homography.
+- The target is a vector containing offsets of four corners of a random 32x32
+  pixel crop of the first channel, giving their positions in the second channel.
+  The four corner offsets can be used to generate the eight equations to solve
+  for the homography, and can thus be said to encode the homography.
 
 ## Setup
 1. Create a virtual environment and install the required dependencies as
@@ -32,18 +32,29 @@ cd homography-dl
 python3 -m venv venv
 source venv/bin/activate
 pip3 install --upgrade pip
-pip3 install -r requirements.txt
+pip3 install -r requirements.txt # I'm using Python 3.8.2
 ```
 
-2. Download training and test data to your local filesystem from:
-https://drive.google.com/drive/folders/1ikm8MuB34-38xNS5v1dzZOBUJLXUV4ch
+2. Download training and test data to your local filesystem from the public
+google drive folder
+https://drive.google.com/drive/folders/1ikm8MuB34-38xNS5v1dzZOBUJLXUV4ch using
+`gdown`:
+```bash
+
+mkdir data
+# If you see `command not found: gdown`, ensure wherever pip3 installs
+# executables is on your $PATH.
+# File ids from 'Right click on file > Get link'
+gdown 1lSAbLA6e3asXWKIJVBK3DkSQK36AwONG --output data/test.h5
+gdown 19-mAqdbZxMdVXt9-gZ0Duep-UGt18tXn --output data/train.h5
+```
 
 Now test that you can the complete training and testing loop on a toy amount of
 data:
 ```bash
 python3 run.py \
-        --test-data=<path_to/test.h5> \
-        --train-data=<path_to/train.h5> \
+        --test-data=data/test.h5 \
+        --train-data=data/train.h5 \
         --mini=True
 ```
 
@@ -56,23 +67,18 @@ Note: this can be run on a GPU by using
 %%writefile run.py
 # paste run.py here
 ```
-3. Log into Google drive, and locate the above data directory in your 'Shared
-with me' folder. Add a shortcut to your 'My Drive' folder.
-4. Add a code cell to mount this folder, and copy it locally:
+3. Download the training and test data to remote disk as above:
 ```
-from google.colab import drive
-drive.mount('/content/drive')
-!mkdir /content/data
-!cp /content/drive/MyDrive/homography/test.h5 /content/data/
-!cp /content/drive/MyDrive/homography/train.h5 /content/data/
-!ls /content/data/
+!mkdir /data
+!gdown 1lSAbLA6e3asXWKIJVBK3DkSQK36AwONG --output data/test.h5
+!gdown 19-mAqdbZxMdVXt9-gZ0Duep-UGt18tXn --output data/train.h5
 ```
-5. Now you can execute `python3 run.py` to train on a GPU via the
+4. Now you can execute `python3 run.py` to train on a GPU via the
 `--device=cuda` option. Test to see this is working by adding a code cell with:
 ```bash
 !python3 run.py \
-         --test-data=/content/data/test.h5 \
-         --train-data=/content/data/train.h5 \
+         --test-data=data/test.h5 \
+         --train-data=data/train.h5 \
          --device=cuda \
          --mini=True
 ```
