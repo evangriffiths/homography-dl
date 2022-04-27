@@ -16,10 +16,9 @@ def get_mean_and_var(file_path):
     for idx in range(len(data_info)):
         data = data_info[str(idx)]
         image = torch.tensor(np.array(data), dtype=torch.float32)
-        # Mean over all dims, so assuming the two input channels of the input
-        # image have same mean and variance.
-        summed += torch.mean(image)
-        summed_squared += torch.mean(image**2)
+        # Mean over height, width dimensions
+        summed += torch.mean(image, dim=[1, 2])
+        summed_squared += torch.mean(image**2, dim=[1, 2])
 
     mean = summed / len(data_info)
     var = (summed_squared / len(data_info)) - mean**2
@@ -238,7 +237,7 @@ if __name__ == "__main__":
     parser.add_argument('--device', type=str, default='cpu', required=False,
                         help='The device the model is executed on',
                         choices=['cpu', 'cuda'])
-    parser.add_argument('--normalize', type=bool, default=True, required=False,
+    parser.add_argument('--normalize', type=bool, default=False, required=False,
                         help='If true, normalize the image data that is the '
                              'input to the model')
     parser.add_argument('--dropout', type=bool, default=True, required=False,
@@ -270,8 +269,7 @@ if __name__ == "__main__":
                             val_loader=val_loader,
                             model=model,
                             criterion=torch.nn.MSELoss(),
-                            optimizer=torch.optim.AdamW(
-                                model.parameters()),
+                            optimizer=torch.optim.AdamW(model.parameters()),
                             num_epochs=args.epochs,
                             device=device)
 
