@@ -256,8 +256,7 @@ relates two projections in the scenarios of:
   easily extended to support more models via a command-line argument.
   (Note that paperswithcode.com reports HomographyNet as achieving a MACE of
   2.50. I'm not sure why this is, as it doesn't agree with what is reported in
-  the paper).
-
+  the paper).  
   PFNet is a much deeper network more FLOPs per iteration) than HomographyNet,
   but has a similar number of parameters (as >90% of HomographyNet's parameters
   are in its penultimate FC layer) so we can expect a similar number of epochs,
