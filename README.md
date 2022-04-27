@@ -1,11 +1,11 @@
 # Training a network for homography prediction
 
 A homography is a transformation relating two projections of a planar surface.
-It is a 3x3 matrix, that maps pixel coordinates of a point on a plane to pixel
+It is a 3x3 matrix that maps pixel coordinates of a point on a plane to pixel
 coordinates in another image of the same plane. Since we are using homogeneous
-coordinates, its scale doesn't matter, so a solution requires finding (at least)
-four matching points, to give eight equations for the eight unknowns. The
-homography can then be solved for using linear least squares.
+coordinates, its scale doesn't matter, so a solution to the homography requires
+finding (at least) four matching points to give eight equations for the eight
+unknowns. The homography can then be solved for using linear least squares.
 
 Traditional CV methods for doing this involve key point detection (e.g. SIFT)
 followed by correspondence matching (e.g. min distance + RANSAC).
@@ -18,16 +18,17 @@ To train our network we have a synthetic COCO-based dataset described as
 follows:
 - The two channels of the input represent two projections of the same planar
   scene from different viewpoints, in grayscale.
-- The target is a vector containing offsets of four corners of a random 32x32
-  pixel crop of the first channel, giving their positions in the second channel.
-  The four corner offsets can be used to generate the eight equations to solve
-  for the homography, and can thus be said to encode the homography.
+- The target is an eight-element vector containing offsets of four corners of a
+  random 32x32 pixel crop of the first channel, giving their positions in the
+  second channel. The four corner offsets can be used to generate the eight
+  equations to solve for the homography, and can thus be said to encode the
+  homography.
 
 ## Setup
 1. Create a virtual environment and install the required dependencies as
 follows:
 ```bash
-# Clone this repo
+git clone https://github.com/evangriffiths/homography-dl.git
 cd homography-dl
 python3 -m venv venv
 source venv/bin/activate
@@ -40,7 +41,6 @@ google drive folder
 https://drive.google.com/drive/folders/1ikm8MuB34-38xNS5v1dzZOBUJLXUV4ch using
 `gdown`:
 ```bash
-
 mkdir data
 # If you see `command not found: gdown`, ensure wherever pip3 installs
 # executables is on your $PATH.
@@ -85,8 +85,8 @@ Note: this can be run on a GPU by using
 
 ## Model architechture and design decisions
 HomographyNet uses a VGG-like Network with eight convolutional layers (the CNN
-backbone that does the key point detection work of SIFT) and two fully connected
-layers (which predict the corner offsets). The key points of this archtecture
+backbone that does the key-point detection work of SIFT) and two fully connected
+layers (which predict the corner offsets). The key features of this archtecture
 are:
 - Conv layers and Relu non-linearity as the basic feature detection block.
 - Pooling layers, so convolutions layers detect features over a range of scales
@@ -95,12 +95,13 @@ are:
 - Batch normalization to reduce the change in distribution of activations passed
   to the subsequent convolution layer between iterations. The result of this is
   to improve training stability for a given learning rate.
-- Dropout after the fully connected layers for regularization (not the
+- Dropout before the fully connected layers for regularization (not for the
   convolutional layers, as (1) they contain far fewer parameters, so require
-  less regularization, and (2) have less of a regularizing effect anyway when
-  applied to highly correlated signals like images/feature maps which are fed
-  into subsequent convolutional layers).
-See `class Model` in `run.py` for the Pytorch implementation.
+  less regularization, and (2) it will have less of a regularizing effect anyway
+  when applied to highly correlated signals like images/feature maps which are
+  fed into subsequent convolutional layers).
+See `class Model` in `run.py` for the Pytorch implementation, which follows
+the description of HomographyNet exactly.
 
 For the training (and interleaved validation) phase, we use mean squared error
 (MSE) loss. This is essentially the same metric as mean average corner error
@@ -113,7 +114,7 @@ terms of overfitting. Note that using the optimizer described in the
 HomographyNet paper (SGD with lr=0.005, momentum=0.9) I saw exploding gradients.
 Adaptive optimizers (like AdamW) are tolerant to a range of learning rates
 relative to standard SGD with momentum, so are a good 'first try' given the
-limited time I was willing to spend tuning hyperparameters.
+limited time I had available to spend tuning hyperparameters.
 
 It's common practice to normalize the input data to zero mean and unit variance
 (idependently for each channel) as part of a data preparation. This is to
@@ -124,15 +125,15 @@ was actually worse when running with `--normalize=True` over nine epochs). With
 more time I would investigate this further, but I suspect it may be because the
 two input hannels are very correlated (i.e. already have the same mean and
 variance) due to how the data is generated. Normalization of input data is
-disabled by default.
+therefore disabled by default.
 
 ## Results
 The following command was used to train and test the network on a machine with
 a GPU.
 ```bash
 python3 run.py \
-        --test-data=<path_to/test.h5> \
-        --train-data=<path_to/train.h5> \
+        --test-data=data/test.h5 \
+        --train-data=data/train.h5 \
         --device=cuda \
         --batch-size=64 \
         --epochs=12
@@ -221,14 +222,19 @@ This is similar to - in fact slightly better than - that reported in the
 HomographyNet paper (9.20).
 
 If I had more time I would have trained for many more epochs in this
-configuration.
+configuration, as it has not yet reached convergence.
 
-The other two graphs show training performance for two configurations when
-running with `--dropout=False`. The first demonstrates the overfitting you
-get without the regularization that you get from dropout. In theory, L2
-regularization via weight decay should also prevent the fitting. However, the
-middle figure shows how a weight decay of 0.001 with AdamW performs poorly in
-comparison to dropout.
+The left most figure shows the 'baseline' result, without using any
+regularization method (reproducible with `--dropout=False`). We can see the
+model overfit, as the training and validation accuracies diverge after five
+epochs. To overcome this we look at two methods of regularization:
+  - L2 regularization via adding weight decay to the Adam optimizer. The middle
+    figure shows training with `weight_decay=0.001`. This performs poorly
+    over the nine epochs run for. With more tuning of the hyperparameter we may
+    have been able to find a weight decay to give good generalization
+    performance.
+  - Dropout (with a probability of 0.5). This performed very well, and was
+    chosen as the final confuguration, achieving the MACE reported above.
 
 ## Limitations, improvements and further work
 
@@ -263,7 +269,7 @@ comparison to dropout.
    easily extended to support more models via a command-line argument.
    (Note that paperswithcode.com reports HomographyNet as achieving a MACE of
    2.50. I'm not sure why this is, as it doesn't agree with what is reported in
-   the paper).
+   the paper itself).
 
    PFNet is a much deeper network more FLOPs per iteration) than HomographyNet,
    but has a similar number of parameters (as >90% of HomographyNet's parameters
