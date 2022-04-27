@@ -232,7 +232,8 @@ way to generalize well on real world data. This is because a homography only
 relates two projections in the scenarios of:
  - Rotation only movements
  - Planar scenes
- - Scenes in which objects are very far from the viewer.  
+ - Scenes in which objects are very far from the viewer.
+  
  But in our synthetic dataset, none of these assumptions are guaranteed to
  hold. The below image pairs taken from the test set are an example when the
  assumptions are broken.
