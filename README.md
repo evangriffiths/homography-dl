@@ -147,7 +147,22 @@ comparison to dropout.
 
 ## Limitations, improvements and further work
 
-The HomographyNet paper (June, 2016) is now nearly 6 years old, which is a long
+1. Something I'm sceptical of (and not commented on in the HomographyNet paper)
+is the ability for a model trained on a synthetic data set generated in this
+way to generalize well on real world data. This is because a homography only
+relates two projections in the scenarios of:
+- Rotation only movements
+- Planar scenes
+- Scenes in which objects are very far from the viewer.
+But in our synthetic dataset, none of these assumptions are guaranteed to hold.
+The below image pairs taken from the test set are an example when the
+assumptions are broken.
+
+![Dog Head](images/dog-head.png)
+
+Traditional CV homography estimation techniques (e.g. SIFT + RANSAC) do not suffer from this problem, as they do not require large synthetic data sets to train.
+
+2. The HomographyNet paper (June, 2016) is now nearly 6 years old, which is a long
 time in the CV/ML world. We can see
 [here]https://paperswithcode.com/sota/homography-estimation-on-pds-coco that
 HomographyNet was surpassed as the SOTA architechture for homography estimation
@@ -169,14 +184,7 @@ but greater time to train the network.
     - understand (by means of visualization) how learned features of first layer differ for homography estimation networks vs image classifiers (as first conv layer for imagenet ResNet, for example, learns filters for RGB layers, whereas homography estimators trained on COCO learn filters for 2 separate grayscale perspective projections)
 
 - Comment on the limitations of how well this would generalize to a real-world test set, vs 
-    - A homography only relates two projections in the scenarios:
-        - Rotation only movements
-        - Planar scenes
-        - Scenes in which objects are very far from the viewer
+
     - In the generated dataset we are using, none of these assumptions are guaranteed to hold. So a model trained on this data may lead to bad generalization on real world test data.
-    - Traditional CV homography estimation teqniques (e.g. SIFT + RANSAC) do not suffer from this problem, as they do not require large synthetic data sets to train.
+    - Traditional CV homography estimation techniques (e.g. SIFT + RANSAC) do not suffer from this problem, as they do not require large synthetic data sets to train.
 
-- An example taken from the test set is this crop of an image of a dog, beside the transformed image:
-![Dog Head](images/dog-head.png)
-
-- Use AdamW over Adam when ``weight_decay > 0` to have the correct L2 regularization implementation (i.e. adding the square of the weights to the loss, `Loss = MSE(output, label) + wd * sum(w^2)`).
