@@ -44,12 +44,13 @@ data:
 python3 run.py \
         --test-data=<path_to/test.h5> \
         --train-data=<path_to/train.h5> \
-        --mini=True
+        --mini=True \
+        --normalize=False
 ```
 
 ## Running on a GPU remotely
 Note: this can be run on a GPU by using
-[colab.research.google.com]colab.research.google.com as follows:
+[colab.research.google.com](colab.research.google.com) as follows:
 1. Select `Edit > Notebook settings > Hardware accelerator > GPU`.
 2. In a code cell, clone this repo and `cd` into the directory:
 ```
@@ -74,7 +75,8 @@ drive.mount('/content/drive')
          --test-data=/content/data/test.h5 \
          --train-data=/content/data/train.h5 \
          --device=cuda \
-         --mini=True
+         --mini=True \
+         --normalize=False
 ```
 
 ## Model architechture and design decisions
@@ -119,9 +121,9 @@ python3 run.py \
         --epochs=12
 ```
 Training with a batch size of 64 is the largest power-of-2 batch size that can
-fit on the single GPU used (Tesla K80, 24GB, according to
-`torch.cuda.get_device_name(0)`). This gave a throughput of slightly over 160
-images per second while training, resulting in around 10 minutes per epoch.
+fit on the single GPU used (Tesla K80, 11.4GB, according to
+`torch.cuda.get_device_properties(0)`). This gave a throughput of slightly over
+160 images per second while training, resulting in around 10 minutes per epoch.
 
 This above comnand trains the network for 12 epochs, generating the right of the
 three loss curves below.
@@ -164,7 +166,7 @@ Traditional CV homography estimation techniques (e.g. SIFT + RANSAC) do not suff
 
 2. The HomographyNet paper (June, 2016) is now nearly 6 years old, which is a long
 time in the CV/ML world. We can see
-[here]https://paperswithcode.com/sota/homography-estimation-on-pds-coco that
+[here](https://paperswithcode.com/sota/homography-estimation-on-pds-coco) that
 HomographyNet was surpassed as the SOTA architechture for homography estimation
 in 2019 by PFNet (and again with a more recent iteration). With more time, I'd
 like to reimplement this model in Pytorch. `run.py` could be easily extended to
