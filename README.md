@@ -226,38 +226,40 @@ comparison to dropout.
 
 ## Limitations, improvements and further work
 
-1. Something I'm sceptical of (and not commented on in the HomographyNet paper)
-is the ability for a model trained on a synthetic data set generated in this
-way to generalize well on real world data. This is because a homography only
-relates two projections in the scenarios of:
- - Rotation only movements
- - Planar scenes
- - Scenes in which objects are very far from the viewer.    
- But in our synthetic dataset, none of these assumptions are guaranteed to
- hold. The below image pairs taken from the test set are an example when the
- assumptions are broken.
+1. Something (not commented on in the HomographyNet paper) that I'm sceptical of
+   is the ability for a model trained on a synthetic data set generated in this
+   way to generalize well on real world data. This is because a homography only
+   relates two projections in the scenarios of:
+
+   - Rotation only movements
+   - Planar scenes
+   - Scenes in which objects are very far from the viewer
+
+   But in our synthetic dataset, none of these assumptions are guaranteed to
+   hold. The below image pairs taken from the test set are an example where
+   these assumptions are broken.
  
+   I think it would be worth investigating whether the relationships between the
+   two input channels of the training data set learned by the model would
+   generalize when testing on real world image pairs.
+   Note that Traditional CV homography estimation techniques (e.g. SIFT + 
+   RANSAC) do not suffer from this problem, as they do not require large
+   synthetic data sets to train.
+
 ![Dog Head](images/dog-head.png)
- 
- I think it would be worth investigating whether the relationships between the
- two input channel of the training data set would still apply when testing on
- real world image pairs.
- 
- Note that Traditional CV homography estimation techniques (e.g. SIFT + RANSAC)
- do not suffer from this problem, as they do not require large synthetic data
- sets to train.
 
 2. The HomographyNet paper (June, 2016) is now nearly 6 years old, which is a
-  long time in the CV/ML world. We can see
-  [here](https://paperswithcode.com/sota/homography-estimation-on-pds-coco) that
-  HomographyNet was surpassed as the SOTA architechture for homography
-  estimation in 2019 by PFNet (and again with a more recent iteration). With
-  more time, I'd like to reimplement this model in Pytorch. `run.py` could be
-  easily extended to support more models via a command-line argument.
-  (Note that paperswithcode.com reports HomographyNet as achieving a MACE of
-  2.50. I'm not sure why this is, as it doesn't agree with what is reported in
-  the paper).    
-  PFNet is a much deeper network more FLOPs per iteration) than HomographyNet,
-  but has a similar number of parameters (as >90% of HomographyNet's parameters
-  are in its penultimate FC layer) so we can expect a similar number of epochs,
-  but greater time to train the network.
+   long time in the CV/ML world. We can see
+   [here](https://paperswithcode.com/sota/homography-estimation-on-pds-coco)
+   that HomographyNet was surpassed as the SOTA architechture for homography
+   estimation in 2019 by PFNet (and again with a more recent iteration). With
+   more time, I'd like to reimplement this model in Pytorch. `run.py` could be
+   easily extended to support more models via a command-line argument.
+   (Note that paperswithcode.com reports HomographyNet as achieving a MACE of
+   2.50. I'm not sure why this is, as it doesn't agree with what is reported in
+   the paper).
+
+   PFNet is a much deeper network more FLOPs per iteration) than HomographyNet,
+   but has a similar number of parameters (as >90% of HomographyNet's parameters
+   are in its penultimate FC layer) so we can expect a similar number of epochs,
+   but greater time to train the network.
